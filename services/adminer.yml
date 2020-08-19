@@ -1,0 +1,34 @@
+version: "3.7"
+
+services:  
+  # Database Administration tool Adsminer
+  adminer:
+    container_name: adminer
+    image: adminer:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.69
+    ports:
+      - "8080:8080"
+    volumes:
+      - $USERDIR/adminer/:/var/www/html/designs
+    environment:
+      - TZ=$TZ
+      - ADMINER_DEFAULT_SERVER=mariadb
+      - ADMINER_DESIGN=lucas-sandery
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.adminer-rtr.entrypoints=https"
+      - "traefik.http.routers.adminer-rtr.rule=HostHeader(`db.$DOMAINNAME`)"
+      - "traefik.http.routers.adminer-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.adminer-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.adminer-rtr.service=adminer-svc"
+      - "traefik.http.services.adminer-svc.loadbalancer.server.port=8080"
+
+networks:
+  home_net:
+    external: true

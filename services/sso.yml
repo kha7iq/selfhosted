@@ -1,0 +1,32 @@
+version: "3.7"
+
+networks:
+  home_net:
+    external: true
+
+services:  
+    # Authelia (Lite) - Self-Hosted Single Sign-On and Two-Factor Authentication
+  authelia:
+    container_name: sso
+    image: authelia/authelia:4.21.0
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.61
+    ports:
+      - "9091:9091"
+    volumes:
+      - $USERDIR/authelia:/config
+    environment:
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.sso-rtr.entrypoints=https"
+      - "traefik.http.routers.sso-rtr.rule=HostHeader(`sso.$DOMAINNAME`)"
+      - "traefik.http.routers.sso-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.sso-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.sso-rtr.service=sso-svc"
+      - "traefik.http.services.sso-svc.loadbalancer.server.port=9091"

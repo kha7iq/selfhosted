@@ -1,0 +1,47 @@
+version: "3.7"
+services:
+
+## qBittorrent with VPN – Bittorrent Downloader
+# If you can't see text in the WebUI go to your qbittorrent.conf file and add "en" to the Locale setting so it looks like this: General\Locale=en
+
+  qbittorrent:
+    container_name: qbittorrent
+    image: linuxserver/qbittorrent:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.66
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    ports:
+      - "8022:8080"
+      - "8999:8999"
+      - "8999:8999/udp"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $USERDIR/qbittorrent:/config
+      - $HOME/torrents:/downloads
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - UMASK=002
+      - WEBUI_PORT=8080
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.qbittorrent-rtr.entrypoints=https"
+      - "traefik.http.routers.qbittorrent-rtr.rule=HostHeader(`qbit.$DOMAINNAME`)"
+      - "traefik.http.routers.qbittorrent-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.qbittorrent-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.qbittorrent-rtr.service=qbittorrent-svc"
+      - "traefik.http.services.qbittorrent-svc.loadbalancer.server.port=8080"
+
+networks:
+  home_net:
+    external: true

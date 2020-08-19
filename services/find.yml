@@ -1,0 +1,34 @@
+version: "3.7"
+services:  
+    # Private search engine
+  searx:
+    container_name: searx
+    image: hoellen/searx:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.73
+    ports:
+      - "8888:8888"
+    environment:
+      - BASE_URL=find.$DOMAINNAME
+      - UID=$PUID
+      - GID=$PGID
+    volumes:
+      - $USERDIR/searx/themes:/usr/local/searx/searx/static/themes
+      - $USERDIR/searx/settings.yml:/usr/local/searx/searx/settings.yml
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.searx-rtr.entrypoints=https"
+      - "traefik.http.routers.searx-rtr.rule=HostHeader(`find.$DOMAINNAME`)"
+      - "traefik.http.routers.searx-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.searx-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.searx-rtr.service=searx-svc"
+      - "traefik.http.services.searx-svc.loadbalancer.server.port=8888"
+
+networks:
+  home_net:
+    external: true

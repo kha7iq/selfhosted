@@ -1,0 +1,29 @@
+version: "3.7"
+services:
+## Guacamole
+  guacamole:
+    container_name: guacamole
+    image: oznu/guacamole:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.63
+#    ports:
+#      - "8080:8080"
+    volumes:
+      - $USERDIR/guacamole:/config
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.guacamole-rtr.entrypoints=https"
+      - "traefik.http.routers.guacamole-rtr.rule=HostHeader(`connect.$DOMAINNAME`)"
+      - "traefik.http.routers.guacamole-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.guacamole-rtr.middlewares=chain-authelia@file,add-guacamole"
+      - "traefik.http.middlewares.add-guacamole.addPrefix.prefix=/guacamole"
+      ## HTTP Services
+      - "traefik.http.routers.guacamole-rtr.service=guacamole-svc"
+      - "traefik.http.services.guacamole-svc.loadbalancer.server.port=8080"
+networks:
+  home_net:
+    external: true

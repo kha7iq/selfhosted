@@ -1,0 +1,37 @@
+version: "3.7"
+
+services:
+# VSCode - VSCode Editing
+  vscode:
+    image: linuxserver/code-server:latest
+    container_name: vscode
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.67
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $USERDIR/code:/config
+      - $HOME/volume/code:/data
+      - $HOME/services:/services
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - SUDO_PASSWORD=$MY_PASSWORD
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.vscode-rtr.entrypoints=https"
+      - "traefik.http.routers.vscode-rtr.rule=HostHeader(`code.$DOMAINNAME`)"
+      - "traefik.http.routers.vscode-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.vscode-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.vscode-rtr.service=vscode-svc"
+      - "traefik.http.services.vscode-svc.loadbalancer.server.port=8443"
+networks:
+  home_net:
+    external: true
+

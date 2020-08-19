@@ -1,0 +1,43 @@
+[http.middlewares]
+  [http.middlewares.middlewares-basic-auth]
+    [http.middlewares.middlewares-basic-auth.basicAuth]
+      realm = "Traefik2 Basic Auth"
+      usersFile = "/shared/.htpasswd"
+
+  [http.middlewares.middlewares-rate-limit]
+    [http.middlewares.middlewares-rate-limit.rateLimit]
+      average = 100
+      burst = 50
+
+# CAUTION: Any headers defined in docker-compose (yml) will OVERWRITE ALL of the headers defined below.
+
+  [http.middlewares.middlewares-secure-headers]
+    [http.middlewares.middlewares-secure-headers.headers]
+      accessControlAllowMethods= ["GET", "OPTIONS", "PUT"]
+      accessControlMaxAge = 100
+      hostsProxyHeaders = ["X-Forwarded-Host"]
+      sslRedirect = true
+      stsSeconds = 63072000
+      stsIncludeSubdomains = true
+      stsPreload = true
+      forceSTSHeader = true
+      customFrameOptionsValue = "allow-from https:example.com" #CSP takes care of this but may be needed for organizr. 
+      contentTypeNosniff = true 
+      browserXssFilter = true 
+      referrerPolicy = "same-origin" 
+      featurePolicy = "camera 'none'; geolocation 'none'; microphone 'none'; payment 'none'; usb 'none'; vr 'none';" 
+      [http.middlewares.middlewares-secure-headers.headers.customResponseHeaders]
+        X-Robots-Tag = "none,noarchive,nosnippet,notranslate,noimageindex,"
+        server = ""
+
+
+  [http.middlewares.middlewares-authelia]
+    [http.middlewares.middlewares-authelia.forwardAuth]
+      address = "http://authelia:9091/api/verify?rd=https://sso.example.com"
+      trustForwardHeader = true
+      authResponseHeaders = ["Remote-User", "Remote-Groups"]
+
+  [http.middlewares.middlewares-nextcloud]
+    [http.middlewares.middlewares-nextcloud.redirectRegex]
+      regex = "/.well-known/(card|cal)dav"
+      replacement = "/remote.php/dav/"

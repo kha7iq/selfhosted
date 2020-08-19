@@ -1,0 +1,63 @@
+###############################################################
+#                   Authelia configuration                    #
+###############################################################
+
+host: 0.0.0.0
+port: 9091
+log_level: warn
+
+jwt_secret: ymoxitMkF0mU9lbymGYpqy2Udnxd9xRfVZHOGDLSK8iBH3W99NCerR # Set random secret 
+
+default_redirection_url: https://sso.example.com
+
+totp:
+  issuer: authelia.com
+  period: 30
+  skew: 1
+
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      algorithm: argon2id
+      iterations: 1
+      salt_length: 16
+      parallelism: 8
+      memory: 1024
+
+# https://docs.authelia.com/configuration/access-control.html
+access_control:
+  default_policy: deny
+  rules:
+    # Rules applied to everyone
+    - domain: sso.example.com
+      policy: bypass
+    - domain: "*.example.com"
+      policy: two_factor
+    - domain: "example.com"
+      policy: two_factor
+
+session:
+  name: authelia_session
+  secret: Xlk397nRxG45MyivHOsdfDmYT3CUgNcx6MXSANwYoweyuisGqGj6lkasPlYz # Set random secret 
+  expiration: 3600 # 1 hour
+  inactivity: 300 # 5 minutes
+  domain: example.com # Should match whatever your root protected domain is
+
+regulation:
+  max_retries: 3
+  find_time: 120
+  ban_time: 300
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  smtp:
+    username: youremail@gmail.com
+    password: yoursecretpassword
+    sender: sso@example.com
+    host: smtp.gmail.com
+    port: 587

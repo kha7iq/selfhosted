@@ -1,0 +1,83 @@
+version: "3.3"
+
+########################### NETWORKS
+networks:
+  home_net:
+    external: true
+
+services:
+
+# Traefik 2 - Reverse Proxy
+  traefik:
+    container_name: traefik
+    image: traefik:v2.2.5 # the chevrotin tag refers to v2.2.x but introduced a breaking change in 2.2.2
+    restart: unless-stopped
+    command: # CLI arguments
+      - --global.checkNewVersion=false
+      - --global.sendAnonymousUsage=false
+      - --entryPoints.http.address=:80
+      - --entryPoints.https.address=:443
+      - --entryPoints.traefik.address=:8080
+      - --api=true
+#      - --api.insecure=true
+#      - --serversTransport.insecureSkipVerify=true
+      - --log=true
+      - --log.level=ERROR # (Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+      - --accessLog=true
+      - --accessLog.filePath=/traefik.log
+      - --accessLog.bufferingSize=100 # Configuring a buffer of 100 lines
+      - --accessLog.filters.statusCodes=400-499
+      - --providers.docker=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.defaultrule=HostHeader(`{{ index .Labels "com.docker.compose.service" }}.$DOMAINNAME`)
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=home_net
+      - --providers.docker.swarmMode=false
+      - --providers.file.directory=/rules # Load dynamic configuration from one or more .toml or .yml files in a directory.
+#      - --providers.file.filename=/path/to/file # Load dynamic configuration from a file.
+      - --providers.file.watch=true # Only works on top level files in the rules folder
+      # - --certificatesResolvers.dns-dynu.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
+      - --certificatesResolvers.dns-dynu.acme.email=$DYNU_EMAIL
+      - --certificatesResolvers.dns-dynu.acme.storage=/acme.json
+      - --certificatesResolvers.dns-dynu.acme.dnsChallenge.provider=dynu
+      #- --certificatesResolvers.dns-dynu.acme.dnsChallenge.resolvers=207.38.70.2:53,104.247.193.125:53,104.149.238.82:53,45.119.209.45:53
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.60 # You can specify a static IP
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80:80
+      - 443:443
+      - 8080:8080
+    environment:
+      - DYNU_EMAIL=$DYNU_EMAIL
+      - DYNU_API_KEY=$DYNU_API_KEY
+      - DYNU_TTL=60
+      - DYNU_PROPAGATION_TIMEOUT=340
+    volumes:
+      - $USERDIR/traefik2/rules:/rules 
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - $USERDIR/traefik2/acme/acme.json:/acme.json 
+      - $USERDIR/traefik2/traefik.log:/traefik.log 
+      - $USERDIR/shared:/shared
+    labels:
+      - "traefik.enable=true"
+      # HTTP-to-HTTPS Redirect
+      - "traefik.http.routers.http-catchall.entrypoints=http"
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # HTTP Routers
+      - "traefik.http.routers.traefik-rtr.entrypoints=https"
+      - "traefik.http.routers.traefik-rtr.rule=HostHeader(`dash.$DOMAINNAME`)"
+      - "traefik.http.routers.traefik-rtr.tls=true"
+      # - "traefik.http.routers.traefik-rtr.tls.certresolver=dns-dynu" # Comment out this line after first run of traefik to force the use of wildcard certs
+      - "traefik.http.routers.traefik-rtr.tls.domains[0].main=$DOMAINNAME"
+      - "traefik.http.routers.traefik-rtr.tls.domains[0].sans=*.$DOMAINNAME"
+      ## Services - API
+      - "traefik.http.routers.traefik-rtr.service=api@internal"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      ## Middlewares
+      #- "traefik.http.routers.traefik-rtr.middlewares=middlewares-basic-auth@file"
+      - "traefik.http.routers.traefik-rtr.middlewares=chain-authelia@file"

@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+  nextcloud:
+    container_name: nextcloud
+    image: linuxserver/nextcloud:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.68
+    expose:
+    - 80
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $USERDIR/nextcloud:/config
+      - $HOME/cloud:/data
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=home_net"
+      ## http Routers
+      - "traefik.http.routers.nextcloud-rtr.entrypoints=https"
+      - "traefik.http.routers.nextcloud-rtr.rule=HostHeader(`cloud.$DOMAINNAME`)"
+      - "traefik.http.routers.nextcloud-rtr.tls=true"
+      ## Service
+      - "traefik.http.services.nextcloud-svc.loadbalancer.server.port=80"
+      ## Middleware Rules
+      - "traefik.http.routers.nextcloud-rtr.middlewares=chain-nextcloud@file"
+networks:
+  home_net:
+    external: true
+
