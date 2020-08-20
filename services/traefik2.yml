@@ -36,7 +36,7 @@ services:
       - --providers.file.directory=/rules # Load dynamic configuration from one or more .toml or .yml files in a directory.
 #      - --providers.file.filename=/path/to/file # Load dynamic configuration from a file.
       - --providers.file.watch=true # Only works on top level files in the rules folder
-      # - --certificatesResolvers.dns-dynu.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
+      - --certificatesResolvers.dns-dynu.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - Comment out this line after testing so that real certs are issued.
       - --certificatesResolvers.dns-dynu.acme.email=$DYNU_EMAIL
       - --certificatesResolvers.dns-dynu.acme.storage=/acme.json
       - --certificatesResolvers.dns-dynu.acme.dnsChallenge.provider=dynu
