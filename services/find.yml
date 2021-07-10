@@ -16,7 +16,6 @@ services:
       - GID=$PGID
     volumes:
       - $USERDIR/searx/themes:/usr/local/searx/searx/static/themes
-      - $USERDIR/searx/settings.yml:/usr/local/searx/searx/settings.yml
     labels:
       - "traefik.enable=true"
       ## HTTP Routers

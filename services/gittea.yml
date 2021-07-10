@@ -1,0 +1,40 @@
+version: "3.7"
+services:  
+    # Gitea Git
+  git:
+    container_name: git
+    hostname: gitea
+    image: gitea/gitea:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.95
+    ports:
+      - "3000:3000"
+    environment:
+      - BASE_URL=git.$DOMAINNAME
+      - USER_UID=$PUID
+      - USER_GID=$PGID
+      - DOMAIN=git.$DOMAINNAME
+      - DISABLE_SSH=true
+      - DISABLE_REGISTRATION=true
+      - REQUIRE_SIGNIN_VIEW=true
+      - DEFAULT_THEME="arc-green"
+    volumes:
+      - $VOLUME/gitea:/data/
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.git-rtr.entrypoints=https"
+      - "traefik.http.routers.git-rtr.rule=HostHeader(`git.$DOMAINNAME`)"
+      ## Middlewares
+      - "traefik.http.routers.git-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.git-rtr.service=git-svc"
+      - "traefik.http.services.git-svc.loadbalancer.server.port=3000"
+
+networks:
+  home_net:
+    external: true

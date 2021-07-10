@@ -1,0 +1,35 @@
+version: "3.7"
+
+# Jenkins Server
+services: 
+  jenkins:
+    container_name: jenkins-server
+    image: jenkins/jenkins:lts
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.97
+    privileged: true
+    user: root
+    ports:
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - $VOLUME/jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/local/bin/docker:/usr/local/bin/docker
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.jenkins-rtr.entrypoints=https"
+      - "traefik.http.routers.jenkins-rtr.rule=HostHeader(`jenkins.$DOMAINNAME`)"
+      - "traefik.http.routers.jenkins-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.jenkins-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.jenkins-rtr.service=jenkins-svc"
+      - "traefik.http.services.jenkins-svc.loadbalancer.server.port=8080"
+
+networks:
+  home_net:
+    external: true

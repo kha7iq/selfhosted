@@ -1,0 +1,44 @@
+version: "3.7"
+
+services:
+  scrutiny:
+    image: linuxserver/scrutiny:latest
+    container_name: scrutiny
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.88
+    cap_add:
+      - SYS_RAWIO
+      - SYS_ADMIN #optional
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+      - SCRUTINY_API_ENDPOINT=http://localhost:8080
+      - SCRUTINY_WEB=true
+      - SCRUTINY_COLLECTOR=true
+    volumes:
+      - $USERDIR/scrutiny/config:/config
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8080:8080
+    devices: # your disks
+      - /dev/sda:/dev/sda
+      - /dev/sdb:/dev/sdb
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=home_net"
+      ## http Routers
+      - "traefik.http.routers.scrutiny-rtr.entrypoints=https"
+      - "traefik.http.routers.scrutiny-rtr.rule=HostHeader(`disk.$DOMAINNAME`)"
+      - "traefik.http.routers.scrutiny-rtr.tls=true"
+      ## Service
+      - "traefik.http.services.scrutiny-svc.loadbalancer.server.port=8080"
+      # Middleware Rules
+      - "traefik.http.routers.scrutiny-rtr.middlewares=chain-authelia@file"
+networks:
+  home_net:
+    external: true
+
+

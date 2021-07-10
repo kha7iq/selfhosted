@@ -1,0 +1,33 @@
+version: "3.7"
+services:  
+    # search engine
+  whoogle:
+    container_name: whoogle
+    image: benbusby/whoogle-search:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.84
+    ports:
+      - "5000:5000"
+    environment:
+      - BASE_URL=search.$DOMAINNAME
+      - UID=$PUID
+      - GID=$PGID
+    volumes:
+      - $USERDIR/whoogle/:/config
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.whoogle-rtr.entrypoints=https"
+      - "traefik.http.routers.whoogle-rtr.rule=HostHeader(`search.$DOMAINNAME`)"
+      - "traefik.http.routers.whoogle-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.whoogle-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.whoogle-rtr.service=whoogle-svc"
+      - "traefik.http.services.whoogle-svc.loadbalancer.server.port=5000"
+
+networks:
+  home_net:
+    external: true

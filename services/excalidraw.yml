@@ -1,0 +1,30 @@
+version: "3.7"
+services:  
+    # Draw sketch board
+  file:
+    container_name: draw
+    hostname: draw
+    image: excalidraw/excalidraw:latest
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.96
+    ports:
+      - "80:500"
+    volumes:
+      - $VOLUME/draw/database.db:/database.db
+      - $HOME:/srv
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.draw-rtr.entrypoints=https"
+      - "traefik.http.routers.draw-rtr.rule=HostHeader(`draw.$DOMAINNAME`)"
+      ## Middlewares
+      - "traefik.http.routers.draw-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.draw-rtr.service=draw-svc"
+      - "traefik.http.services.draw-svc.loadbalancer.server.port=80"
+
+networks:
+  home_net:
+    external: true

@@ -1,0 +1,38 @@
+version: "3.7"
+services:
+## wikijs - Personal Notes and wiki
+  wikijs:
+    container_name: wikijs
+    image: ghcr.io/linuxserver/wikijs:version-2.5.170
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.90
+    ports:
+      - '3000:3000'
+    volumes:
+      - $VOLUME/wikijs/config:/config
+      - $VOLUME/wikijs/data:/data
+    environment:
+      - TZ=$TZ
+      - PUID=$PUID
+      - PGID=$PGID
+      - DB_TYPE=mariadb
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=wikijs
+      - DB_PASS=$WIKIJS_DB_PASS
+      - DB_NAME=wikijs
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.wikijs-rtr.entrypoints=https"
+      - "traefik.http.routers.wikijs-rtr.rule=HostHeader(`wiki.$DOMAINNAME`)"
+      ## Middlewares
+      - "traefik.http.routers.wikijs-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.wikijs-rtr.service=wikijs-svc"
+      - "traefik.http.services.wikijs-svc.loadbalancer.server.port=3000"
+networks:
+  home_net:
+    external: true

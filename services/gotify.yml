@@ -1,0 +1,32 @@
+version: "3.7"
+
+services:  
+  # Gotify push gateway
+  gotify:
+    container_name: gotify
+    image: gotify/server:2.0.23
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.77
+    ports:
+      - "80:80"
+    volumes:
+      - $VOLUME/gotify_data:/app/data"
+    environment:
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.gotify-rtr.entrypoints=https"
+      - "traefik.http.routers.gotify-rtr.rule=HostHeader(`push.$DOMAINNAME`)"
+      - "traefik.http.routers.gotify-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.gotify-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.gotify-rtr.service=gotify-svc"
+      - "traefik.http.services.gotify-svc.loadbalancer.server.port=80"
+
+networks:
+  home_net:
+    external: true

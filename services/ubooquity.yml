@@ -1,0 +1,47 @@
+version: "3.7"
+services: 
+## Ubooquity Ebooks
+  books:
+    image: linuxserver/ubooquity:latest
+    container_name: ubooquity
+    environment:
+      - PUID=$PUID
+      - PGID=$PGID
+      - TZ=$TZ
+    volumes:
+      - $USERDIR/docker/ubooquity:/config
+      - $USERDIR/books:/books
+    ports:
+      - "2202:2202"
+      - "2203:2203"
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.71
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.ubooquity-rtr.entrypoints=https"
+      - "traefik.http.routers.ubooquity-rtr.rule=HostHeader(`books.$DOMAINNAME`)"
+      - "traefik.http.routers.ubooquity-rtr.priority=10"
+      - "traefik.http.routers.ubooquity-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.ubooquity-rtr.middlewares=chain-authelia@file"
+      # - "traefik.http.middlewares.add-ubooquity.addPrefix.prefix=/ubooquity"
+      ## HTTP Services
+      - "traefik.http.routers.ubooquity-rtr.service=ubooquity-svc"
+      - "traefik.http.services.ubooquity-svc.loadbalancer.server.port=2202"
+      ## Ubooquity Admin
+      - "traefik.http.routers.ubooquityadmin-rtr.entrypoints=https"
+      - "traefik.http.routers.ubooquityadmin-rtr.rule=(HostHeader(`books.$DOMAINNAME`) && Path(`/admin`))"
+      - "traefik.http.routers.ubooquityadmin-rtr.priority=20"
+      - "traefik.http.routers.ubooquityadmin-rtr.middlewares=add-ubooquity-admin"
+      - "traefik.http.middlewares.add-ubooquity-admin.addPrefix.prefix=/ubooquity/admin"
+      - "traefik.http.routers.ubooquityadmin-rtr.service=ubooquityadmin-svc"
+      - "traefik.http.services.ubooquityadmin-svc.loadbalancer.server.port=2203"
+
+networks:
+  home_net:
+    external: true

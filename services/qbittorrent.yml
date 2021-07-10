@@ -1,8 +1,7 @@
 version: "3.7"
 services:
 
-## qBittorrent with VPN – Bittorrent Downloader
-# If you can't see text in the WebUI go to your qbittorrent.conf file and add "en" to the Locale setting so it looks like this: General\Locale=en
+## qBittorrent – Bittorrent Downloader
 
   qbittorrent:
     container_name: qbittorrent

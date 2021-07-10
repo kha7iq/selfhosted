@@ -1,6 +1,6 @@
-version: "3.3"
+version: "3.7"
 
-########################### NETWORKS
+# NETWORKS
 networks:
   home_net:
     external: true
@@ -10,11 +10,11 @@ services:
 # Traefik 2 - Reverse Proxy
   traefik:
     container_name: traefik
-    image: traefik:v2.2.5 # the chevrotin tag refers to v2.2.x but introduced a breaking change in 2.2.2
+    image: traefik:v2.4.8
     restart: unless-stopped
     command: # CLI arguments
       - --global.checkNewVersion=false
-      - --global.sendAnonymousUsage=false
+      - --global.sendAnonymousUsage=true
       - --entryPoints.http.address=:80
       - --entryPoints.https.address=:443
       - --entryPoints.traefik.address=:8080
@@ -22,7 +22,7 @@ services:
 #      - --api.insecure=true
 #      - --serversTransport.insecureSkipVerify=true
       - --log=true
-      - --log.level=ERROR # (Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
+      - --log.level=error #(Default: error) DEBUG, INFO, WARN, ERROR, FATAL, PANIC
       - --accessLog=true
       - --accessLog.filePath=/traefik.log
       - --accessLog.bufferingSize=100 # Configuring a buffer of 100 lines
@@ -36,11 +36,19 @@ services:
       - --providers.file.directory=/rules # Load dynamic configuration from one or more .toml or .yml files in a directory.
 #      - --providers.file.filename=/path/to/file # Load dynamic configuration from a file.
       - --providers.file.watch=true # Only works on top level files in the rules folder
-      - --certificatesResolvers.dns-dynu.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - Comment out this line after testing so that real certs are issued.
+      # Lets encrypt certs cofig
+
+      - --entrypoints.https.http.tls.certresolver=dns-dynu
+      - --entrypoints.https.http.tls.domains[0].main=$DOMAINNAME
+      - --entrypoints.https.http.tls.domains[0].sans=*.$DOMAINNAME
+      - --entrypoints.https.http.tls.domains[1].main=$2ND_DOMAIN # Pulls Main cert for second domain
+      - --entrypoints.https.http.tls.domains[1].sans=*.$2ND_DOMAIN # Pulls wildcard cert for second domain
+
+      # - --certificatesResolvers.dns-dynu.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory # LetsEncrypt Staging Server - uncomment when testing
       - --certificatesResolvers.dns-dynu.acme.email=$DYNU_EMAIL
       - --certificatesResolvers.dns-dynu.acme.storage=/acme.json
       - --certificatesResolvers.dns-dynu.acme.dnsChallenge.provider=dynu
-      #- --certificatesResolvers.dns-dynu.acme.dnsChallenge.resolvers=207.38.70.2:53,104.247.193.125:53,104.149.238.82:53,45.119.209.45:53
+      - --certificatesResolvers.dns-cloudflare.acme.dnsChallenge.delayBeforeCheck=90 # To delay DNS check and reduce LE hitrate
     networks:
       home_net:
         ipv4_address: 192.168.0.60 # You can specify a static IP
@@ -70,14 +78,35 @@ services:
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
       # HTTP Routers
       - "traefik.http.routers.traefik-rtr.entrypoints=https"
-      - "traefik.http.routers.traefik-rtr.rule=HostHeader(`dash.$DOMAINNAME`)"
+      - "traefik.http.routers.traefik-rtr.rule=HostHeader(`dashboard.$DOMAINNAME`)"
       - "traefik.http.routers.traefik-rtr.tls=true"
-      # - "traefik.http.routers.traefik-rtr.tls.certresolver=dns-dynu" # Comment out this line after first run of traefik to force the use of wildcard certs
-      - "traefik.http.routers.traefik-rtr.tls.domains[0].main=$DOMAINNAME"
-      - "traefik.http.routers.traefik-rtr.tls.domains[0].sans=*.$DOMAINNAME"
       ## Services - API
       - "traefik.http.routers.traefik-rtr.service=api@internal"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
       ## Middlewares
       #- "traefik.http.routers.traefik-rtr.middlewares=middlewares-basic-auth@file"
       - "traefik.http.routers.traefik-rtr.middlewares=chain-authelia@file"
+  
+  
+  # Traefik - Custom Error Pages
+  traefik-error-pages:
+    container_name: traefik-error-pages
+    image: guillaumebriday/traefik-custom-error-pages
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.85 # You can specify a static IP
+    labels:
+      - "traefik.enable=true"
+      # HTTP Routers
+      - "traefik.http.routers.traefik-error-pages-rtr.entrypoints=https"
+      - "traefik.http.routers.traefik-error-pages-rtr.rule=HostRegexp(`{host:.+}`)"
+      - "traefik.http.routers.traefik-error-pages-rtr.priority=1"
+      # Middlewares
+      - "traefik.http.routers.traefik-error-pages-rtr.middlewares=traefik-error-pages"
+      - "traefik.http.middlewares.traefik-error-pages.errors.service=traefik-error-pages-svc"
+      - "traefik.http.middlewares.traefik-error-pages.errors.status=401,403,404,429,500,502,503"
+      - "traefik.http.middlewares.traefik-error-pages.errors.query=/{status}.html"
+      # HTTP Services
+      - "traefik.http.routers.traefik-error-pages-rtr.service=traefik-error-pages-svc"
+      - "traefik.http.services.traefik-error-pages-svc.loadbalancer.server.port=80"

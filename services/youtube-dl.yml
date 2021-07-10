@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:  
+    youtubedl:
+      container_name: youtubedl
+      image:  tzahi12345/youtubedl-material:nightly
+      restart: unless-stopped
+      networks:
+        home_net:
+          ipv4_address: 192.168.0.91
+      security_opt:
+        - no-new-privileges:true
+      ports:
+        - "8998:17442"
+      volumes:
+        - $VOLUME/youtubedl/appdata:/app/appdata
+        - $VOLUME/youtubedl/audio:/app/audio
+        - $VOLUME/youtubedl/users:/app/users
+        - $VOLUME/youtubedl/subscriptions:/app/subscriptions
+        - $VOLUME/youtubedl/video:/app/video
+      environment:
+        - UID=$PUID
+        - GID=$PGID
+        - TZ=$TZ
+      labels:
+        - "traefik.enable=true"
+        ## HTTP Routers
+        - "traefik.http.routers.youtubedl-rtr.entrypoints=https"
+        - "traefik.http.routers.youtubedl-rtr.rule=HostHeader(`ydl.$DOMAINNAME`)"
+        - "traefik.http.routers.youtubedl-rtr.tls=true"
+        ## Middlewares
+        - "traefik.http.routers.youtubedl-rtr.middlewares=chain-authelia@file"
+        ## HTTP Services
+        - "traefik.http.routers.youtubedl-rtr.service=youtubedl-svc"
+        - "traefik.http.services.youtubedl-svc.loadbalancer.server.port=17442"
+
+networks:
+  home_net:
+    external: true

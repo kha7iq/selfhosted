@@ -1,0 +1,32 @@
+version: "3.7"
+
+networks:
+  home_net:
+    external: true
+
+services:  
+    # Postwomen , API testing tool
+  postman:
+    container_name: postman
+    image: liyasthomas/postwoman:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.82
+    ports:
+      - "3000:3000"
+    volumes:
+      - $USERDIR/postman:/app
+    environment:
+      - TZ=$TZ
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.postman-rtr.entrypoints=https"
+      - "traefik.http.routers.postman-rtr.rule=HostHeader(`post.$DOMAINNAME`)"
+      - "traefik.http.routers.postman-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.postman-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.postman-rtr.service=postman-svc"
+      - "traefik.http.services.postman-svc.loadbalancer.server.port=3000"

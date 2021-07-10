@@ -1,0 +1,87 @@
+version: "3.3"
+services:
+  mail:
+    image: bytemark/smtp
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.80
+    restart: always
+    environment:
+      - RELAY_HOST=smtp.gmail.com
+      - RELAY_PORT=587
+      - RELAY_USERNAME=$SMTP_EMAIL
+      - RELAY_PASSWORD=$SMTP_PASS
+
+  plausible_db:
+    image: postgres:12
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.71
+    volumes:
+      - $VOLUME/plausable/db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=$POSTGRES_PASS
+
+  plausible_events_db:
+    image: yandex/clickhouse-server:latest
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.79
+    volumes:
+      - $VOLUME/plausable/event-data:/var/lib/clickhouse
+      - $VOLUME/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - $VOLUME/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  geoip:
+    image: maxmindinc/geoipupdate
+    environment:
+      - GEOIPUPDATE_EDITION_IDS=GeoLite2-Country
+      - GEOIPUPDATE_FREQUENCY=168 # update every 7 days
+      - GEOIPUPDATE_ACCOUNT_ID=$GEOIP_ACCOUNT_ID
+      - GEOIPUPDATE_LICENSE_KEY=$GEOIP_LIC
+    volumes:
+      - $VOLUME/geoip:/usr/share/GeoIP
+    
+
+  plausible:
+    image: plausible/analytics:latest
+    command: sh -c "sleep 10 && /entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh db init-admin && /entrypoint.sh run"
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.63
+    volumes:
+      - $VOLUME/geoip:/geoip:ro
+    depends_on:
+      - plausible_db
+      - plausible_events_db
+      - mail
+      - geoip
+    ports:
+      - 8000:8000
+    environment:
+      - ADMIN_USER_EMAIL=$ADMIN_USER_EMAIL
+      - ADMIN_USER_NAME=$ADMIN_USER_NAME
+      # - ADMIN_USER_PWD=$ADMIN_USER_PWD
+      - BASE_URL=https://stats.$DOMAINNAME
+      - SECRET_KEY_BASE=$SECRET_KEY_BASE
+      - GEOLITE2_COUNTRY_DB=/geoip/GeoLite2-Country.mmdb
+      - DISABLE_REGISTRATION=true
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.plausible-rtr.entrypoints=https"
+      - "traefik.http.routers.plausible-rtr.rule=HostHeader(`stats.$DOMAINNAME`)"
+      - "traefik.http.routers.plausible-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.plausible-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.plausible-rtr.service=plausible-svc"
+      - "traefik.http.services.plausible-svc.loadbalancer.server.port=8000"
+networks:
+  home_net:
+    external: true
+
