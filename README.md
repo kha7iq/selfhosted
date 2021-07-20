@@ -20,7 +20,7 @@
 
 [Ghost Blog](services/ghost-blog.yml)
 
-[Gittea](/services/gittea.yml)
+[Gitea](/services/gitea.yml)
 
 [Gotify](/services/gotify.yml)
 
