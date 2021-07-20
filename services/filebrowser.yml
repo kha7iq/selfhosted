@@ -1,0 +1,30 @@
+version: "3.7"
+services:  
+    # File Browser
+  file:
+    container_name: file
+    hostname: file
+    image: filebrowser/filebrowser
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.94
+    ports:
+      - "80:80"
+    volumes:
+      - $VOLUME/file/database.db:/database.db
+      - $HOME:/srv # you can mount any folder here which you would like to see in file browser
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.file-rtr.entrypoints=https"
+      - "traefik.http.routers.file-rtr.rule=HostHeader(`file.$DOMAINNAME`)"
+      ## Middlewares
+      - "traefik.http.routers.file-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.file-rtr.service=file-svc"
+      - "traefik.http.services.file-svc.loadbalancer.server.port=80"
+
+networks:
+  home_net:
+    external: true
