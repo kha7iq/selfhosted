@@ -41,3 +41,9 @@
     [http.middlewares.middlewares-nextcloud.redirectRegex]
       regex = "/.well-known/(card|cal)dav"
       replacement = "/remote.php/dav/"
+
+# Add admin prefix for pi-hole
+
+  [http.middlewares.middlewares-admin]
+  [http.middlewares.add-admin.addPrefix]
+    prefix = "/admin"
