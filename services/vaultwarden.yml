@@ -1,0 +1,65 @@
+version: "3.7"
+
+networks:
+  home_net:
+    external: true
+
+services:
+## vaultwarden - Password Vault
+  vaultwarden:
+    container_name: vaultwarden
+    image: vaultwardenrs/server:latest
+    restart: always
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.65
+    ports:
+      - "80:80"
+      - "3012:3012"
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $USERDIR/vaultwarden:/data
+      - /var/log/docker:/var/log/docker
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - SIGNUPS_ALLOWED=true # Change to false after first login
+      - INVITATIONS_ALLOWED=true # Send invitation using admin page
+      - WEBSOCKET_ENABLED=true
+      - LOG_FILE=/var/log/docker/vaultwarden.log
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_FROM=$SMTP_EMAIL
+      - SMTP_PORT=587
+      - SMTP_SSL=true
+      - SMTP_USERNAME=$SMTP_EMAIL
+      - SMTP_PASSWORD=$SMTP_PASS
+      - DOMAIN=https://pass.$DOMAINNAME
+#      - DISABLE_ADMIN_TOKEN=true ### USE WITH CAUTION!! Access admin page at vaultwarden.$DOMAINNAME/admin to send invitations - anyone can access, add authorization!!!
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.vaultwarden-rtr.entrypoints=https"
+      - "traefik.http.routers.vaultwarden-rtr.rule=HostHeader(`pass.$DOMAINNAME`)"
+      - "traefik.http.routers.vaultwarden-rtr.priority=10"
+      - "traefik.http.routers.vaultwarden-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.vaultwarden-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.vaultwarden-rtr.service=vaultwarden-svc"
+      - "traefik.http.services.vaultwarden-svc.loadbalancer.server.port=80"
+      ## vaultwarden WebSocket
+      - "traefik.http.routers.vaultwardenHub-rtr.entrypoints=https"
+      - "traefik.http.routers.vaultwardenHub-rtr.rule=(HostHeader(`pass.$DOMAINNAME`) && Path(`/notifications/hub`))"
+      - "traefik.http.routers.vaultwardenHub-rtr.priority=20"
+      - "traefik.http.routers.vaultwardenHub-rtr.service=vaultwardenHub-svc"
+      - "traefik.http.services.vaultwardenHub-svc.loadbalancer.server.port=3012"
+
+## vaultwarden Backup
+
+  ## To restore database from backup:
+    # docker exec -it vaultwarden bash
+    # mv /data/db.sqlite3 /data/db.sqlite3.back
+    # sqlite3 /data/db.sqlite3 ".restore '/data/db-backup/select_db_file'"
+    # exit
+
