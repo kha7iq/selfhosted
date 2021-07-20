@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+  netdata:
+    image: netdata/netdata:latest
+    container_name: netdata
+    hostname: server_monitoring
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.93
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    restart: unless-stopped
+    environment:
+      - TZ=$TZ
+      - DOCKER_USR=root
+      - DO_NOT_TRACK=1
+      - SEND_TELEGRAM="YES"
+      - TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
+      - DEFAULT_RECIPIENT_TELEGRAM="$TELEGRAM_CHANNEL_ID"
+    volumes:
+      - $VOLUME/netdata/config:/etc/netdata
+      - $VOLUME/netdata/lib:/var/lib/netdata
+      - $VOLUME/netdata/cache:/var/cache/netdata
+      - /run/udev:/run/udev:ro
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 19999:19999
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=home_net"
+      ## http Routers
+      - "traefik.http.routers.netdata-rtr.entrypoints=https"
+      - "traefik.http.routers.netdata-rtr.rule=HostHeader(`monitor.$DOMAINNAME`)"
+      - "traefik.http.routers.netdata-rtr.tls=true"
+      ## Service
+      - "traefik.http.services.netdata-svc.loadbalancer.server.port=19999"
+      # Middleware Rules
+      - "traefik.http.routers.netdata-rtr.middlewares=chain-authelia@file"
+networks:
+  home_net:
+    external: true
+
