@@ -6,7 +6,7 @@
 
 [Adminer](/services/adminer.yml)
 
-[Bitwarde](/services/bitwarden.yml)
+[Authelia](/services/sso.yml)
 
 [Certdump](/services/certdumper.yml)
 
@@ -16,7 +16,9 @@
 
 [Excalidraw](/services/excalidraw.yml)
 
-[Searx](/services/find.yml)
+[File Browser](services/filebrowser.yml)
+
+[Ghost Blog](services/ghost-blog.yml)
 
 [Gittea](/services/gittea.yml)
 
@@ -34,7 +36,11 @@
 
 [Minio](/services/minio.yml)
 
+[Net Data](services/netdata.yml)
+
 [NextCloud](/services/nextcloud_nginx_default_backup)
+
+[Pi-Hole](services/pihole.yml)
 
 [Plausible Analytics](/services/plausible-analytics.yml)
 
@@ -42,19 +48,23 @@
 
 [Postwomen](/services/postwomen.yml)
 
+[PyLoad](services/pyload.yml)
+
 [Qbittorrent](/services/qbittorrent.yml)
 
 [Redis](/services/redis.yml)
 
+[Searx](/services/find.yml)
+
 [Scrutiny](/services/scrutiny.yml)
 
-[Authelia](/services/sso.yml)
-
-[Synthing](/services/synthing.yml)
+[Syncthing](/services/synthing.yml)
 
 [Traefik 2](/services/traefik2.yml)
 
 [Ubooquity](/services/ubooquity.yml)
+
+[Vault Warden](/services/vaultwarden.yml)
 
 [Whoogle](/services/whoogle.yml)
 
