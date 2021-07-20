@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+# Ghost Blog
+  ghost:
+    image: ghost:3-alpine
+    container_name: ghost
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.83
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - $HOME/volume/ghost:/var/lib/ghost/content
+    environment:
+      - database__client=mysql
+      - database__connection__host=mariadb
+      - database__connection__database=ghost
+      - database__connection__user=ghost
+      - database__connection__password=$GHOST_PASS
+      - url=http://$DOMAINNAME
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.ghost-rtr.entrypoints=https"
+      - "traefik.http.routers.ghost-rtr.rule=HostHeader(`$DOMAINNAME`)"
+      - "traefik.http.routers.ghost-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.ghost-rtr.middlewares=chain-no-auth@file"
+      ## HTTP Services
+      - "traefik.http.routers.ghost-rtr.service=ghost-svc"
+      - "traefik.http.services.ghost-svc.loadbalancer.server.port=2368"
+networks:
+  home_net:
+    external: true
