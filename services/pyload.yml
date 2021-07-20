@@ -1,0 +1,34 @@
+version: "3.7"
+
+services:  
+    pyload:
+      container_name: pyload
+      image:  ghcr.io/linuxserver/pyload
+      restart: unless-stopped
+      networks:
+        home_net:
+          ipv4_address: 192.168.0.92
+      ports:
+        - "8000:8000"
+      volumes:
+        - $VOLUME/pyload/config:/config
+        - $VOLUME/pyload/downloads:/downloads
+      environment:
+        - PUID=$PUID
+        - PGID=$PGID
+        - TZ=$TZ
+      labels:
+        - "traefik.enable=true"
+        ## HTTP Routers
+        - "traefik.http.routers.pyload-rtr.entrypoints=https"
+        - "traefik.http.routers.pyload-rtr.rule=HostHeader(`pydl.$DOMAINNAME`)"
+        - "traefik.http.routers.pyload-rtr.tls=true"
+        ## Middlewares
+        - "traefik.http.routers.pyload-rtr.middlewares=chain-authelia@file"
+        ## HTTP Services
+        - "traefik.http.routers.pyload-rtr.service=pyload-svc"
+        - "traefik.http.services.pyload-svc.loadbalancer.server.port=8000"
+
+networks:
+  home_net:
+    external: true
