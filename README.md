@@ -72,6 +72,8 @@
 
 [Youtube-dl](/services/youtube-dl.yml)
 
+### Gitlab in Kubernetes
+[Gitlab Kubernetes](https://github.com/kha7iq/gitlab-k8s)
 
 ## How to use this repo:
 
