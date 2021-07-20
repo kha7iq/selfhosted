@@ -1,0 +1,47 @@
+version: "3.7"
+services:
+
+## Pihole - Ad-blocker
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    restart: always
+    hostname: adblock-server
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.53
+    ports:
+      - '53:53/tcp'
+      - '53:53/udp'
+      - '67:67/udp'
+      - '80:80/tcp'
+      - '443:443/tcp'
+    # security_opt:
+    #   - no-new-privileges:true
+    # cap_add:
+    #       - NET_ADMIN
+    volumes:
+      - $VOLUME/pihole/etc:/etc/pihole/
+      - $VOLUME/pihole/dnsmasq.d:/etc/dnsmasq.d/
+    environment:
+      - TZ=$TZ
+      - PUID=$PUID
+      - PGID=$PGID
+      - IPv6=False
+      - WEBPASSWORD=$MY_PASSWORD
+      - DNS1=127.0.0.1
+      - DNS2=1.1.1.1
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.pihole-rtr.entrypoints=https"
+      - "traefik.http.routers.pihole-rtr.rule=HostHeader(`adblock.$DOMAINNAME`)"
+      ## Middlewares
+      - "traefik.http.routers.pihole-rtr.middlewares=chain-authelia@file,add-admin@file"
+      ## HTTP Services
+      - "traefik.http.routers.pihole-rtr.service=pihole-svc"
+      - "traefik.http.services.pihole-svc.loadbalancer.server.port=80"
+
+networks:
+  home_net:
+    external: true
