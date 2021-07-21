@@ -10,7 +10,6 @@ services:
       home_net:
         ipv4_address: 192.168.0.97
     privileged: true
-    user: root
     ports:
       - 8080:8080
       - 50000:50000
