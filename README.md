@@ -38,7 +38,7 @@
 
 [Net Data](services/netdata.yml)
 
-[NextCloud](/services/nextcloud_nginx_default_backup)
+[NextCloud](/services/nextcloud.yml)
 
 [Pi-Hole](services/pihole.yml)
 
