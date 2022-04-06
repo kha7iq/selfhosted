@@ -1,0 +1,47 @@
+version: "3.7"
+services:
+
+## WireGaurd VPN using wg-easy 
+# https://github.com/WeeJeWel/wg-easy
+# Be sure to set create entrypoint on traefik and forward UDP port 51820 from your router.
+
+  wireguard:
+    container_name: wireguard
+    image: weejewel/wg-easy
+    restart: unless-stopped
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.96
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv4.ip_forward=1
+    ports:
+      - "51820:51820/udp"
+      - "51821:51821/tcp"
+    volumes:
+      - $VOLUME/wireguard:/etc/wireguard
+    environment:
+      - TZ=$TZ
+      - WG_HOST=wire.$DOMAINNAME
+    labels:
+      - "traefik.enable=true"
+      ## HTTP Routers
+      - "traefik.http.routers.wireguard-rtr.entrypoints=https"
+      - "traefik.http.routers.wireguard-rtr.rule=HostHeader(`wire.$DOMAINNAME`)"
+      - "traefik.http.routers.wireguard-rtr.tls=true"
+      ## Middlewares
+      - "traefik.http.routers.wireguard-rtr.middlewares=chain-authelia@file"
+      ## HTTP Services
+      - "traefik.http.routers.wireguard-rtr.service=wireguard-svc"
+      - "traefik.http.services.wireguard-svc.loadbalancer.server.port=51821"
+      ## UDP
+      - "traefik.udp.routers.wireguard-udp.entrypoints=wireguard"
+      - "traefik.udp.routers.wireguard-udp.service=wireguard-udp-svc"
+      - "traefik.udp.services.wireguard-udp-svc.loadbalancer.server.port=51820"
+
+networks:
+  home_net:
+    external: true
