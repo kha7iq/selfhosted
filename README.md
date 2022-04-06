@@ -70,6 +70,8 @@
 
 [Wikijs](/services/wikijs.yml)
 
+[Wireguard](/services/wireguard.yml)
+
 [Youtube-dl](/services/youtube-dl.yml)
 
 ### Gitlab in Kubernetes
