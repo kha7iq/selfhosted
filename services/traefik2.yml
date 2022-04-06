@@ -18,6 +18,7 @@ services:
       - --entryPoints.http.address=:80
       - --entryPoints.https.address=:443
       - --entryPoints.traefik.address=:8080
+      - --entrypoints.wireguard.address=:51820/udp
       - --api=true
 #      - --api.insecure=true
 #      - --serversTransport.insecureSkipVerify=true
@@ -58,6 +59,7 @@ services:
       - 80:80
       - 443:443
       - 8080:8080
+      - 51820:51820/udp
     environment:
       - DYNU_EMAIL=$DYNU_EMAIL
       - DYNU_API_KEY=$DYNU_API_KEY
