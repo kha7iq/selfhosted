@@ -1,0 +1,37 @@
+version: '3.7'
+
+services:
+  crowdsec:
+    image: crowdsecurity/crowdsec:v1.4.1
+    container_name: crowdsec
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.65
+    environment:
+      GID: "${PGID}"
+      COLLECTIONS: "crowdsecurity/linux crowdsecurity/traefik crowdsecurity/http-cve LePresidente/authelia"
+    volumes:
+      - $VOLUME/crowdsec/db:/var/lib/crowdsec/data/
+      - $VOLUME/config:/etc/crowdsec/
+      - $USERDIR/traefik2/log:/var/log/traefik/:ro
+      - $USERDIR/authelia/log/authelia.log:/var/log/authelia.log:ro
+    restart: unless-stopped
+
+  bouncer-traefik:
+    image: docker.io/fbonalair/traefik-crowdsec-bouncer:latest
+    container_name: bouncer-traefik
+    networks:
+      home_net:
+        ipv4_address: 192.168.0.83
+    environment:
+      # https://docs.crowdsec.net/docs/local_api/bouncers/
+      CROWDSEC_BOUNCER_API_KEY: $CS_API
+      CROWDSEC_AGENT_HOST: crowdsec:8080
+    depends_on:
+      - crowdsec
+    restart: unless-stopped
+
+# Network
+networks:
+  home_net:
+    external: true
