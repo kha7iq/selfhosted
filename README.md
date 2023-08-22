@@ -50,13 +50,15 @@
 [Minio](/services/minio.yml)
 
 ### N
-[Net Data](services/netdata.yml)
-
 [Navidrome](services/navidrome.yml)
+
+[Net Data](services/netdata.yml)
 
 [NextCloud](/services/nextcloud.yml)
 
 ### P
+[Pastefy](services/pastefy.yml)
+
 [Pi-Hole](services/pihole.yml)
 
 [Plausible Analytics](/services/plausible-analytics.yml)
