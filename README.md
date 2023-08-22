@@ -52,6 +52,8 @@
 ### N
 [Net Data](services/netdata.yml)
 
+[Navidrome](services/navidrome.yml)
+
 [NextCloud](/services/nextcloud.yml)
 
 ### P
