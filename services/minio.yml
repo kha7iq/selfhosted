@@ -1,10 +1,10 @@
 version: "3.7"
 
 services:  
-  # Minio object storage
+  # MinIO Object storage
   minio:
     container_name: minio
-    image: minio/minio:latest
+    image: quay.io/minio/minio:RELEASE.2023-10-16T04-13-43Z
     restart: always
     networks:
       home_net:
@@ -12,22 +12,34 @@ services:
     ports:
       - "9000:9000"
     volumes:
-      - $VOLUME/minio/:/data
+      - $VOLUME/minio/:/mnt/data
     environment:
-      MINIO_ACCESS_KEY: "$MINIO_ACCESS_KEY"
-      MINIO_SECRET_KEY: "$MINIO_SECRET_KEY"
-    command: server /data
+      MINIO_ROOT_USER: "$MY_USERNAME"
+      MINIO_ROOT_PASSWORD: "$MY_PASSWORD"
+      MINIO_VOLUMES: "/mnt/data"
+      MINIO_BROWSER_REDIRECT_URL: "https://minio-web.$DOMAINNAME"
+      MINIO_SERVER_URL: "https://minio.$DOMAINNAME"
+    command: minio server --console-address ":9090"
     labels:
       - "traefik.enable=true"
       ## HTTP Routers
       - "traefik.http.routers.minio-rtr.entrypoints=https"
       - "traefik.http.routers.minio-rtr.rule=HostHeader(`minio.$DOMAINNAME`)"
       - "traefik.http.routers.minio-rtr.tls=true"
+      ## Web Console Router
+      - "traefik.http.routers.minio-rtr-admin.entrypoints=https"
+      - "traefik.http.routers.minio-rtr-admin.rule=HostHeader(`minio-web.$DOMAINNAME`)"
+      - "traefik.http.routers.minio-rtr-admin.tls=true"
       ## Middlewares
       - "traefik.http.routers.minio-rtr.middlewares=chain-no-auth@file"
+
+      - "traefik.http.routers.minio-rtr-admin.middlewares=chain-no-auth@file"
       ## HTTP Services
       - "traefik.http.routers.minio-rtr.service=minio-svc"
       - "traefik.http.services.minio-svc.loadbalancer.server.port=9000"
+      
+      - "traefik.http.routers.minio-rtr-admin.service=minio-svc-admin"
+      - "traefik.http.services.minio-svc-admin.loadbalancer.server.port=9090"
 
 networks:
   home_net:
